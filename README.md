@@ -26,14 +26,19 @@ wriggle -w <FILE>
 - Get values from Href tags from html
 - deals with relative paths
 - Checks for scope 
+- Recursion
+- Output options
+- Subdomain identification
+
 
 ### Features to add:
 
 - Threading
-- Recursion
-- Output options
+- opposite of verbose mode
+- program timer
+- timeout counter + url recording
+- option not to output to file
 - Colours / nice formatting
-- Subdomain identification
 - JS file identification
 - Easy install
 - Make logo (least priority)
