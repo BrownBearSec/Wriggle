@@ -46,6 +46,10 @@ func getHREFfromURL(url string) {
 				fmt.Println("The get request has timed out, either increase max timeout or check if the site is up")
 				return
 			}
+			if strings.Contains(err.Error(), "connection reset by") {
+				fmt.Println("The connection was reset by peer")
+				return
+			}
 			fmt.Println(err)
 		}
 
