@@ -48,13 +48,13 @@ An example of both files can be seen in the examples folder
 - Final report
 - Colours / nice formatting
 - opposite of verbose mode
+- program timer
 
 ### Features to add:
 
 - Threading
-- program timer
-- option not to output to file
 
+- option not to output to file
 - JS file identification
 - Make logo (least priority)
 

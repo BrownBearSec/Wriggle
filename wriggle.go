@@ -212,7 +212,7 @@ func main() {
 	if *blacklistFile == "" {
 		fmt.Println(red + "[Warning]" + reset + " " + white + ": no blacklisted domains/subdomains, continuing" + reset)
 	} else {
-		fmt.Println("You have selected", *blacklistFile, "as the file of domains to blacklist")
+		fmt.Println(cyan+"[Info]"+reset+white+" blacklist selected : ", *blacklistFile)
 	}
 
 	maxTimeout, _ = strconv.Atoi(*maxTimeoutOption)
@@ -270,20 +270,21 @@ func main() {
 		i++
 	}
 
-	fmt.Println("------------ Final report ----------")
-	fmt.Println("Number of subdomains found : ", len(foundSubDomains))
-	fmt.Println("Number of URLs found : ", len(foundURLs))
+	fmt.Println(cyan + "[Info]" + reset + " " + white + "Final report")
+	fmt.Println(cyan+"[Info]"+reset+" "+white+"Number of subdomains found : ", len(foundSubDomains))
+	fmt.Println(cyan+"[Info]"+reset+" "+white+"Number of URLs found : ", len(foundURLs))
 	if numOfTimeout > 0 {
 		timeoutFileName := "URLsThatTimedOut" + startTime
 		writeToFile(timeoutFileName, timeOuts)
-		fmt.Println("Number of links timed out : ", numOfTimeout)
+		fmt.Println(cyan+"[Info] "+reset+" "+white+"Number of links timed out : ", numOfTimeout)
 		fmt.Println("(Written to file", timeoutFileName, ")")
 	}
 	if len(oddURLs) > 0 {
 		oddURLsFileName := "OddURLs" + startTime
 		writeToFile(oddURLsFileName, oddURLs)
-		fmt.Println(len(oddURLs), " number of odd / strange error inducing URLs found, manually reveue is recommended")
-		fmt.Println("(Written to file", oddURLsFileName, ")")
+		fmt.Println(cyan + "[Info]" + reset + " " + white + strconv.Itoa(len(oddURLs)) + " number of odd / strange error inducing URLs found, manually reveue is recommended")
+		fmt.Println(cyan+"[Info]"+reset+" "+white+"(Written to file", oddURLsFileName, ")")
 	}
-
+	elapsed := time.Since(startTimetime).String()
+	fmt.Println(cyan + "[Info]" + reset + " " + white + "Scan took " + elapsed + " seconds")
 }
