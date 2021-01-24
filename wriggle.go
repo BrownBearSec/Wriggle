@@ -21,6 +21,8 @@ var maxTimeout int
 var numOfTimeout int = 0
 var timeOuts []string
 var oddURLs []string
+var newJSfiles []string
+var foundJSfiles []string
 
 var reset string = "\033[0m"
 var red string = "\033[31m"
@@ -40,6 +42,8 @@ func help() {
 	fmt.Println("-t <number> : Set the max timeout (in seconds) for connecting to a URL, default 20 seconds")
 	fmt.Println("-s <FILE> : Specifiy the name of the subdomain output file, default is 'subDomainsOf' + time of scan")
 	fmt.Println("-u <FILE> : Specifiy the name of the URL output file, default is 'URLsOf' + time of scan")
+	fmt.Println("-j <FILE> : Specifiy the nme of the JS output file, default is 'JSfilesOf' + time of scan")
+	fmt.Println("-v : verbose mode, not advisiable unless you love spam")
 	fmt.Println("-h : Display this help page")
 	os.Exit(3)
 }
@@ -50,7 +54,8 @@ func getHREFfromURL(url string) {
 		Timeout: time.Duration(maxTimeout) * time.Second,
 	}
 
-	if strings.Index(url, "http") == 0 {
+	if strings.Index(url, "http") == 0 && !(url[len(url)-3:] == ".js") && !(url[len(url)-4:] == ".css") {
+
 		resp, err := client.Get(url)
 		if err != nil {
 			//fmt.Println("GetXYZ")
@@ -95,7 +100,8 @@ func getHREFfromURL(url string) {
 
 			if len(foundURL) > 1 {
 				if foundURL[0] == '/' && foundURL[1] != '/' {
-					url = url + foundURL
+					foundURL = foundURL[1:]
+					foundURL = url + foundURL
 				}
 			}
 
@@ -156,6 +162,18 @@ func extractSubDomains() {
 	}
 }
 
+func extractJSfiles() {
+	for i := 0; i < len(newURLsfound); i++ {
+		url := newURLsfound[i]
+		if url[len(url)-3:] == ".js" && !inArray(newJSfiles, url) && !inArray(foundJSfiles, url) {
+			if strings.Index(url, "http") != 0 {
+				url = "http://" + url
+			}
+			newJSfiles = append(newJSfiles, url)
+		}
+	}
+}
+
 func writeToFile(fileName string, listOfStrings []string) {
 	f, err := os.OpenFile(fileName,
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -176,12 +194,19 @@ func printSubDomains(newSub []string) {
 	}
 }
 
+func printJsFiles(newJS []string) {
+	for i := 0; i < len(newJS); i++ {
+		fmt.Println(yellow + "[JS file]" + reset + " " + white + newJS[i])
+	}
+}
+
 func main() {
 
 	startTimetime := time.Now()
 	startTime := startTimetime.String()
 	defaultSubdomainName := "subDomainsOf" + startTime
 	defaultURLName := "URLsOf" + startTime
+	defaultJSName := "JSfilesOf" + startTime
 
 	wantHelp := flag.Bool("h", false, "display help page")
 	whitelistFile := flag.String("w", "", "the whitelist file for domains")
@@ -189,6 +214,7 @@ func main() {
 	maxTimeoutOption := flag.String("t", "20", "max timeout for connection timeouts")
 	subDomainOutFile := flag.String("s", defaultSubdomainName, "name of subdomain found file")
 	URLOutFile := flag.String("u", defaultURLName, "name of URLs found out file")
+	JSOutFile := flag.String("j", defaultJSName, "name of JS found out file")
 	verbose := flag.Bool("v", false, "verbose output?")
 	flag.Parse()
 
@@ -251,21 +277,28 @@ func main() {
 
 		getHREFfromURL(foundURLs[i])
 		extractSubDomains()
+		extractJSfiles()
 
 		a := append(foundURLs, newURLsfound...)
 		foundURLs = a
 		b := append(foundSubDomains, newSubDomains...)
 		foundSubDomains = b
+		c := append(foundJSfiles, newJSfiles...)
+		foundJSfiles = c
 		if *verbose {
 			fmt.Println("number of new URLs found : ", len(newURLsfound))
 			fmt.Println("number of new subdomains discovered : ", len(newSubDomains))
+			fmt.Println("number of js files found : ", len(newJSfiles))
 		}
 		printSubDomains(newSubDomains)
+		printJsFiles(newJSfiles)
 		//This is the point where you write the newly discovered stuff to a file later
 		writeToFile(*subDomainOutFile, newSubDomains)
 		writeToFile(*URLOutFile, newURLsfound)
+		writeToFile(*JSOutFile, newJSfiles)
 		newURLsfound = nil
 		newSubDomains = nil
+		newJSfiles = nil
 		//fmt.Println(foundURLs)
 		i++
 	}
