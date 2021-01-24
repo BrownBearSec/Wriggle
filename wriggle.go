@@ -82,7 +82,7 @@ func getHREFfromURL(url string) {
 		htmlStrig := string(body)
 
 		if resp.StatusCode == 404 {
-			fmt.Println("Status code 404 on url", url)
+			fmt.Println(red+"[Warning]"+reset+" "+white+"Status code 404 on url : ", url)
 			return
 		}
 
