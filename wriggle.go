@@ -22,6 +22,16 @@ var numOfTimeout int = 0
 var timeOuts []string
 var oddURLs []string
 
+var reset string = "\033[0m"
+var red string = "\033[31m"
+var green string = "\033[32m"
+var yellow string = "\033[33m"
+var blue string = "\033[34m"
+var purple string = "\033[35m"
+var cyan string = "\033[36m"
+var gray string = "\033[37m"
+var white string = "\033[97m"
+
 func help() {
 	fmt.Println("Displaying the help page")
 	fmt.Println("Usage: wriggle -w <FILE>")
@@ -43,18 +53,18 @@ func getHREFfromURL(url string) {
 	if strings.Index(url, "http") == 0 {
 		resp, err := client.Get(url)
 		if err != nil {
-			fmt.Println("GetXYZ")
+			//fmt.Println("GetXYZ")
 			if strings.Contains(err.Error(), "Client.Timeout") {
-				fmt.Println("The get request has timed out, either increase max timeout or check if the site is up")
+				fmt.Println(red + "[Warning]" + reset + " " + white + "The get request has timed out, either increase max timeout or check if the site is up : " + url + reset)
 				numOfTimeout++
 				timeOuts = append(timeOuts, url)
 				return
 			}
 			if strings.Contains(err.Error(), "connection reset by") {
-				fmt.Println("The connection was reset by peer")
+				fmt.Println(red + "[Warning]" + reset + " " + white + "The connection was reset by peer : " + url + reset)
 				return
 			}
-			fmt.Println(err)
+			fmt.Println(red + "[Warning]" + reset + " " + white + err.Error() + " : " + url + reset)
 			oddURLs = append(oddURLs, url)
 			return
 		}
@@ -77,8 +87,6 @@ func getHREFfromURL(url string) {
 		}
 
 		htmlArray := strings.Split(htmlStrig, "href=\"")
-
-		fmt.Println("---------------")
 
 		for i := 0; i < len(htmlArray); i++ {
 			htmlPortion := string(htmlArray[i])
@@ -162,6 +170,12 @@ func writeToFile(fileName string, listOfStrings []string) {
 	}
 }
 
+func printSubDomains(newSub []string) {
+	for i := 0; i < len(newSub); i++ {
+		fmt.Println(blue + "[Sub domain]" + reset + " " + white + newSub[i])
+	}
+}
+
 func main() {
 
 	startTimetime := time.Now()
@@ -175,6 +189,7 @@ func main() {
 	maxTimeoutOption := flag.String("t", "20", "max timeout for connection timeouts")
 	subDomainOutFile := flag.String("s", defaultSubdomainName, "name of subdomain found file")
 	URLOutFile := flag.String("u", defaultURLName, "name of URLs found out file")
+	verbose := flag.Bool("v", false, "verbose output?")
 	flag.Parse()
 
 	if *wantHelp {
@@ -191,11 +206,11 @@ func main() {
 		fmt.Println("You have not supplied a whitelist file of domains")
 		os.Exit(3)
 	} else {
-		fmt.Println("You have selected", *whitelistFile, "as the list of domains to whitelist")
+		fmt.Println(cyan+"[Info]"+reset+" "+white+"whitelist selected : ", *whitelistFile+reset)
 	}
 
 	if *blacklistFile == "" {
-		fmt.Println("WARNING: no blacklisted domains/subdomains, continuing")
+		fmt.Println(red + "[Warning]" + reset + " " + white + ": no blacklisted domains/subdomains, continuing" + reset)
 	} else {
 		fmt.Println("You have selected", *blacklistFile, "as the file of domains to blacklist")
 	}
@@ -226,7 +241,14 @@ func main() {
 
 	i := 0
 	for i < len(foundURLs) {
-		fmt.Println("Now processing : ", foundURLs[i])
+		if *verbose {
+			fmt.Println("Now processing : ", foundURLs[i])
+		}
+
+		if i%1000 == 0 {
+			fmt.Println(green + "[Progress]" + reset + " " + white + strconv.Itoa(i) + "/" + strconv.Itoa(len(foundURLs)))
+		}
+
 		getHREFfromURL(foundURLs[i])
 		extractSubDomains()
 
@@ -234,8 +256,11 @@ func main() {
 		foundURLs = a
 		b := append(foundSubDomains, newSubDomains...)
 		foundSubDomains = b
-		fmt.Println("number of new URLs found : ", len(newURLsfound))
-		fmt.Println("number of new subdomains discovered : ", len(newSubDomains))
+		if *verbose {
+			fmt.Println("number of new URLs found : ", len(newURLsfound))
+			fmt.Println("number of new subdomains discovered : ", len(newSubDomains))
+		}
+		printSubDomains(newSubDomains)
 		//This is the point where you write the newly discovered stuff to a file later
 		writeToFile(*subDomainOutFile, newSubDomains)
 		writeToFile(*URLOutFile, newURLsfound)

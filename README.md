@@ -46,14 +46,15 @@ An example of both files can be seen in the examples folder
 - Output options
 - Subdomain identification
 - Final report
+- Colours / nice formatting
+- opposite of verbose mode
 
 ### Features to add:
 
 - Threading
-- opposite of verbose mode
 - program timer
 - option not to output to file
-- Colours / nice formatting
+
 - JS file identification
 - Make logo (least priority)
 
