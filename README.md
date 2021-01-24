@@ -4,6 +4,8 @@
 
 *A project made for me to learn golang*
 
+![logo?](other/wriggle.png)
+
 ### If you appreciate what I do please help
 
 https://commerce.coinbase.com/checkout/1f3b4d8f-afb9-47f4-8a18-1e6f4502ce82
