@@ -59,7 +59,6 @@ An example of both files can be seen in the examples folder
 
 - Threading
 - option not to output to file
-- Make logo (least priority)
 
 ### Contact me:
 

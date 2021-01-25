@@ -23,6 +23,8 @@ var timeOuts []string
 var oddURLs []string
 var newJSfiles []string
 var foundJSfiles []string
+var found404URLs []string
+var new404URLs []string
 
 var reset string = "\033[0m"
 var red string = "\033[31m"
@@ -42,7 +44,8 @@ func help() {
 	fmt.Println("-t <number> : Set the max timeout (in seconds) for connecting to a URL, default 20 seconds")
 	fmt.Println("-s <FILE> : Specifiy the name of the subdomain output file, default is 'subDomainsOf' + time of scan")
 	fmt.Println("-u <FILE> : Specifiy the name of the URL output file, default is 'URLsOf' + time of scan")
-	fmt.Println("-j <FILE> : Specifiy the nme of the JS output file, default is 'JSfilesOf' + time of scan")
+	fmt.Println("-j <FILE> : Specifiy the name of the JS output file, default is 'JSfilesOf' + time of scan")
+	fmt.Println("-4 <FILE> : Specifiy the name of the 404 output file, default is '404FilesOf' + time of scan")
 	fmt.Println("-v : verbose mode, not advisiable unless you love spam")
 	fmt.Println("-h : Display this help page")
 	os.Exit(3)
@@ -87,7 +90,8 @@ func getHREFfromURL(url string) {
 		htmlStrig := string(body)
 
 		if resp.StatusCode == 404 {
-			fmt.Println(red+"[Warning]"+reset+" "+white+"Status code 404 on url : ", url)
+			//fmt.Println(red+"[Warning]"+reset+" "+white+"Status code 404 on url : ", url)
+			new404URLs = append(new404URLs, url)
 			return
 		}
 
@@ -100,14 +104,21 @@ func getHREFfromURL(url string) {
 
 			if len(foundURL) > 1 {
 				if foundURL[0] == '/' && foundURL[1] != '/' {
-					foundURL = foundURL[1:]
+					//fmt.Println("found url : ", foundURL)
+					//fmt.Println("url : ", url)
+					if url[len(url)-1] == '/' && foundURL[0] == '/' {
+						foundURL = foundURL[1:]
+					}
+
 					foundURL = url + foundURL
+					//fmt.Println("after : ", foundURL)
 				}
 			}
 
 			isInScope := checkScope(foundURL)
 			if isInScope {
 				if !inArray(foundURLs, foundURL) && !inArray(newURLsfound, foundURL) {
+					//fmt.Println("found this : ", foundURL)
 					newURLsfound = append(newURLsfound, foundURL)
 				}
 			}
@@ -153,7 +164,11 @@ func extractSubDomains() {
 		urlSectionArray := strings.Split(newURLsfound[i], "/")
 		for j := 0; j < len(urlSectionArray); j++ {
 			for k := 0; k < len(whitelist); k++ {
+				//fmt.Println("before : ", urlSectionArray[j])
 				if strings.Contains(urlSectionArray[j], whitelist[k]) && !inArray(foundSubDomains, urlSectionArray[j]) && !inArray(newSubDomains, urlSectionArray[j]) && !strings.Contains(urlSectionArray[j], "mailto:") && !strings.Contains(urlSectionArray[j], "=") && !strings.Contains(urlSectionArray[j], "@") {
+					//fmt.Println("test : ", urlSectionArray[j])
+					//fmt.Println("whitelist? : ", whitelist[k])
+					//fmt.Println(newURLsfound[i])
 					newSubDomains = append(newSubDomains, urlSectionArray[j])
 				}
 			}
@@ -165,11 +180,13 @@ func extractSubDomains() {
 func extractJSfiles() {
 	for i := 0; i < len(newURLsfound); i++ {
 		url := newURLsfound[i]
-		if url[len(url)-3:] == ".js" && !inArray(newJSfiles, url) && !inArray(foundJSfiles, url) {
-			if strings.Index(url, "http") != 0 {
-				url = "http://" + url
+		if len(url) > 5 {
+			if url[len(url)-3:] == ".js" && !inArray(newJSfiles, url) && !inArray(foundJSfiles, url) {
+				if strings.Index(url, "http") != 0 {
+					url = "https://" + url
+				}
+				newJSfiles = append(newJSfiles, url)
 			}
-			newJSfiles = append(newJSfiles, url)
 		}
 	}
 }
@@ -207,6 +224,7 @@ func main() {
 	defaultSubdomainName := "subDomainsOf" + startTime
 	defaultURLName := "URLsOf" + startTime
 	defaultJSName := "JSfilesOf" + startTime
+	default404Name := "404FilesOf" + startTime
 
 	wantHelp := flag.Bool("h", false, "display help page")
 	whitelistFile := flag.String("w", "", "the whitelist file for domains")
@@ -216,6 +234,7 @@ func main() {
 	URLOutFile := flag.String("u", defaultURLName, "name of URLs found out file")
 	JSOutFile := flag.String("j", defaultJSName, "name of JS found out file")
 	verbose := flag.Bool("v", false, "verbose output?")
+	fourOhFourFile := flag.String("4", default404Name, "file name of 404 output")
 	flag.Parse()
 
 	if *wantHelp {
@@ -250,6 +269,11 @@ func main() {
 	whitelist = strings.Split(string(contentWhitelist), "\n")
 	whitelist = whitelist[:len(whitelist)-1]
 
+	if inArray(whitelist, " ") || inArray(whitelist, "") {
+		fmt.Println(red + "[ERROR]" + reset + " " + white + ": There is an empty line in your whitelist file (maybe the last line) that would cause scope to accept anything, fix and rerun")
+		os.Exit(3)
+	}
+
 	if len(*blacklistFile) > 0 {
 		contentBlacklist, err := ioutil.ReadFile(*blacklistFile)
 		if err != nil {
@@ -261,7 +285,7 @@ func main() {
 	}
 
 	for i := 0; i < len(whitelist); i++ {
-		var url string = fmt.Sprintf("http://%s/", whitelist[i])
+		var url string = fmt.Sprintf("https://%s/", whitelist[i])
 		foundURLs = append(foundURLs, url)
 	}
 
@@ -285,6 +309,8 @@ func main() {
 		foundSubDomains = b
 		c := append(foundJSfiles, newJSfiles...)
 		foundJSfiles = c
+		d := append(found404URLs, new404URLs...)
+		found404URLs = d
 		if *verbose {
 			fmt.Println("number of new URLs found : ", len(newURLsfound))
 			fmt.Println("number of new subdomains discovered : ", len(newSubDomains))
@@ -296,9 +322,11 @@ func main() {
 		writeToFile(*subDomainOutFile, newSubDomains)
 		writeToFile(*URLOutFile, newURLsfound)
 		writeToFile(*JSOutFile, newJSfiles)
+		writeToFile(*fourOhFourFile, new404URLs)
 		newURLsfound = nil
 		newSubDomains = nil
 		newJSfiles = nil
+		new404URLs = nil
 		//fmt.Println(foundURLs)
 		i++
 	}
@@ -306,6 +334,7 @@ func main() {
 	fmt.Println(cyan + "[Info]" + reset + " " + white + "Final report")
 	fmt.Println(cyan+"[Info]"+reset+" "+white+"Number of subdomains found : ", len(foundSubDomains))
 	fmt.Println(cyan+"[Info]"+reset+" "+white+"Number of URLs found : ", len(foundURLs))
+	fmt.Println(cyan+"[Info]"+reset+" "+white+"Number of 404 status codes found : ", len(found404URLs))
 	if numOfTimeout > 0 {
 		timeoutFileName := "URLsThatTimedOut" + startTime
 		writeToFile(timeoutFileName, timeOuts)
