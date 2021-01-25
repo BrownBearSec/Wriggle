@@ -27,7 +27,8 @@ wriggle -w <FILE>
 -t <number> : Set the max timeout (in seconds) for connecting to a URL, default 20 seconds
 -s <FILE> : Specifiy the name of the subdomain output file, default is 'subDomainsOf' + time of scan
 -u <FILE> : Specifiy the name of the URL output file, default is 'URLsOf' + time of scan
--j <FILE> : Specifiy the nme of the JS output file, default is 'JSfilesOf' + time of scan
+-j <FILE> : Specifiy the name of the JS output file, default is 'JSfilesOf' + time of scan
+-4 <FILE> : Specifiy the name of the 404 output file, default is '404FilesOf' + time of scan
 -v : verbose mode, not advisiable unless you love spam
 -h : Display this help page
 ```
@@ -54,6 +55,7 @@ An example of both files can be seen in the examples folder
 - opposite of verbose mode
 - program timer
 - JS file identification
+
 
 ### Features to add:
 

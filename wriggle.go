@@ -25,6 +25,7 @@ var newJSfiles []string
 var foundJSfiles []string
 var found404URLs []string
 var new404URLs []string
+var verb bool = false
 
 var reset string = "\033[0m"
 var red string = "\033[31m"
@@ -57,7 +58,7 @@ func getHREFfromURL(url string) {
 		Timeout: time.Duration(maxTimeout) * time.Second,
 	}
 
-	if strings.Index(url, "http") == 0 && !(url[len(url)-3:] == ".js") && !(url[len(url)-4:] == ".css") {
+	if strings.Index(url, "http") == 0 && (!strings.Contains(url, ".js") && !strings.Contains(url, ".jsp")) && !strings.Contains(url, ".css") {
 
 		resp, err := client.Get(url)
 		if err != nil {
@@ -87,15 +88,19 @@ func getHREFfromURL(url string) {
 
 		defer resp.Body.Close()
 
-		htmlStrig := string(body)
+		htmlString := string(body)
 
 		if resp.StatusCode == 404 {
-			//fmt.Println(red+"[Warning]"+reset+" "+white+"Status code 404 on url : ", url)
+			if verb {
+				fmt.Println(red+"[Warning]"+reset+" "+white+"Status code 404 on url : ", url)
+			}
 			new404URLs = append(new404URLs, url)
 			return
 		}
 
-		htmlArray := strings.Split(htmlStrig, "href=\"")
+		getJSFilesFromHTML(htmlString, url)
+
+		htmlArray := strings.Split(htmlString, "href=\"")
 
 		for i := 0; i < len(htmlArray); i++ {
 			htmlPortion := string(htmlArray[i])
@@ -121,6 +126,37 @@ func getHREFfromURL(url string) {
 					//fmt.Println("found this : ", foundURL)
 					newURLsfound = append(newURLsfound, foundURL)
 				}
+			}
+		}
+	}
+}
+
+func getJSFilesFromHTML(html string, url string) {
+	htmlArray := strings.Split(html, "src=\"")
+
+	for i := 0; i < len(htmlArray); i++ {
+		htmlPortion := string(htmlArray[i])
+		splitBySpeechmarkArray := strings.Split(htmlPortion, "\"")
+		foundURI := splitBySpeechmarkArray[0]
+
+		if len(foundURI) > 1 {
+			if foundURI[0] == '/' && foundURI[1] != '/' {
+				if url[len(url)-1] == '/' && foundURI[0] == '/' {
+					foundURI = foundURI[1:]
+				}
+
+				foundURI = url + foundURI
+			}
+			if foundURI[0] == '/' && foundURI[1] == '/' {
+				foundURI = "https:" + foundURI
+			}
+		}
+
+		isInScope := checkScope(foundURI)
+		if isInScope {
+
+			if !inArray(foundJSfiles, foundURI) && !inArray(newJSfiles, foundURI) && (strings.Contains(foundURI, ".js") && !strings.Contains(foundURI, ".jsp")) {
+				newJSfiles = append(newJSfiles, foundURI)
 			}
 		}
 	}
@@ -181,7 +217,7 @@ func extractJSfiles() {
 	for i := 0; i < len(newURLsfound); i++ {
 		url := newURLsfound[i]
 		if len(url) > 5 {
-			if url[len(url)-3:] == ".js" && !inArray(newJSfiles, url) && !inArray(foundJSfiles, url) {
+			if (strings.Contains(url, ".js") && !strings.Contains(url, ".jsp")) && !inArray(newJSfiles, url) && !inArray(foundJSfiles, url) {
 				if strings.Index(url, "http") != 0 {
 					url = "https://" + url
 				}
@@ -217,6 +253,10 @@ func printJsFiles(newJS []string) {
 	}
 }
 
+func newRoute() {
+
+}
+
 func main() {
 
 	startTimetime := time.Now()
@@ -239,6 +279,10 @@ func main() {
 
 	if *wantHelp {
 		help()
+	}
+
+	if *verbose {
+		verb = true
 	}
 
 	if len(os.Args) == 1 {
@@ -291,11 +335,11 @@ func main() {
 
 	i := 0
 	for i < len(foundURLs) {
-		if *verbose {
+		if verb {
 			fmt.Println("Now processing : ", foundURLs[i])
 		}
 
-		if i%1000 == 0 {
+		if i%10 == 0 {
 			fmt.Println(green + "[Progress]" + reset + " " + white + strconv.Itoa(i) + "/" + strconv.Itoa(len(foundURLs)))
 		}
 
@@ -311,7 +355,7 @@ func main() {
 		foundJSfiles = c
 		d := append(found404URLs, new404URLs...)
 		found404URLs = d
-		if *verbose {
+		if verb {
 			fmt.Println("number of new URLs found : ", len(newURLsfound))
 			fmt.Println("number of new subdomains discovered : ", len(newSubDomains))
 			fmt.Println("number of js files found : ", len(newJSfiles))
