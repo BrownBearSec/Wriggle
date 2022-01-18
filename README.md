@@ -60,11 +60,6 @@ An example of both files can be seen in the examples folder
 - Threading
 - option not to output to file
 
-### Contact me:
-
-If you need to contact me for any reason, bugs, feedback, anything:
-
-email: contact@josephwitten.com
 
 ### Obvious legal points
 
