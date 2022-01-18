@@ -8,8 +8,6 @@
 
 ### If you appreciate what I do please help
 
-https://commerce.coinbase.com/checkout/1f3b4d8f-afb9-47f4-8a18-1e6f4502ce82
-
 ### Installation
 
 1) `git clone https://github.com/iamSm9l/Wriggle.git`
